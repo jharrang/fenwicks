@@ -68,7 +68,7 @@ class DenseBN(Sequential):
     """
 
     def __init__(self, c: int, kernel_initializer='glorot_uniform', bn_mom=0.99,
-                 bn_eps=0.001, drop_rate: float = 0.0, bn_before_relu=True, activ_name='relu'):
+                 bn_eps=0.001, drop_rate: float = 0.0, bn_before_activ=True, activ_name='relu'):
         """
         :param c: number of neurons in the Dense layer.
         :param kernel_initializer: initialization method for the Dense layer.
@@ -79,7 +79,7 @@ class DenseBN(Sequential):
         bn = tf.keras.layers.BatchNormalization(momentum=bn_mom, epsilon=bn_eps)
         activation = tf.keras.layers.Activation(activ_name)
 
-        if bn_before_relu:
+        if bn_before_activ:
             self.add(bn)
             self.add(activation)
         else:
@@ -104,14 +104,14 @@ class ConvBN(Sequential):
     """
 
     def __init__(self, c: int, kernel_size=3, strides=(1, 1), kernel_initializer='glorot_uniform', bn_mom=0.99,
-                 bn_eps=0.001, bn_before_relu=True, activ_name='relu'):
+                 bn_eps=0.001, bn_before_activ=True, activ_name='relu'):
         super().__init__()
         self.add(tf.keras.layers.Conv2D(filters=c, kernel_size=kernel_size, strides=strides,
                                         kernel_initializer=kernel_initializer, padding='same', use_bias=False))
         bn = tf.keras.layers.BatchNormalization(momentum=bn_mom, epsilon=bn_eps)
         activation = tf.keras.layers.Activation(activ_name)
         
-        if bn_before_relu:
+        if bn_before_activ:
             self.add(bn)
             self.add(activation)
         else:
