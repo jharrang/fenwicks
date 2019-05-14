@@ -125,11 +125,12 @@ class ConvBlk(Sequential):
     """
 
     def __init__(self, c, pool=None, convs=1, kernel_size=3, kernel_initializer='glorot_uniform', bn_mom=0.99,
-                 bn_eps=0.001):
+                 bn_eps=0.001, bn_before_activ=True, activ_name='relu'):
         super().__init__()
         for i in range(convs):
             self.add(
-                ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom, bn_eps=bn_eps))
+                ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom,
+                        bn_eps=bn_eps, bn_before_activ=bn_before_activ, activ_name=activ_name))
         self.add(pool or tf.keras.layers.MaxPooling2D())
 
 
@@ -139,13 +140,13 @@ class ConvResBlk(ConvBlk):
     """
 
     def __init__(self, c, pool=None, convs=1, res_convs=2, kernel_size=3, kernel_initializer='glorot_uniform',
-                 bn_mom=0.99, bn_eps=0.001):
+                 bn_mom=0.99, bn_eps=0.001, bn_before_activ=True, activ_name='relu'):
         super().__init__(c, pool=pool, convs=convs, kernel_size=kernel_size, kernel_initializer=kernel_initializer,
-                         bn_mom=bn_mom, bn_eps=bn_eps)
+                         bn_mom=bn_mom, bn_eps=bn_eps, bn_before_activ=bn_before_activ, activ_name=activ_name)
         self.res = []
         for i in range(res_convs):
             conv_bn = ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom,
-                             bn_eps=bn_eps)
+                             bn_eps=bn_eps, bn_before_activ=bn_before_activ, activ_name=activ_name)
             self.res.append(conv_bn)
 
     def call(self, x: tf.Tensor, *args, **kw_args) -> tf.Tensor:
