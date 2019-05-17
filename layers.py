@@ -140,7 +140,7 @@ class ConvResBlk(ConvBlk):
     """
 
     def __init__(self, c, pool=None, convs=1, res_convs=2, kernel_size=3, kernel_initializer='glorot_uniform',
-                 bn_mom=0.99, bn_eps=0.001, bn_before_activ=True, activ_name='relu'):
+                 bn_mom=0.99, bn_eps=0.001, bn_before_activ=True, activ_name='relu', use_shakedrop=False, shake_prob=0.5):
         super().__init__(c, pool=pool, convs=convs, kernel_size=kernel_size, kernel_initializer=kernel_initializer,
                          bn_mom=bn_mom, bn_eps=bn_eps, bn_before_activ=bn_before_activ, activ_name=activ_name)
         self.res = []
@@ -148,6 +148,8 @@ class ConvResBlk(ConvBlk):
             conv_bn = ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom,
                              bn_eps=bn_eps, bn_before_activ=bn_before_activ, activ_name=activ_name)
             self.res.append(conv_bn)
+        if use_shakedrop:
+            self.res.append(ShakeDrop(prob=shake_prob))
 
     def call(self, x: tf.Tensor, *args, **kw_args) -> tf.Tensor:
         h = super().call(x)
@@ -248,3 +250,39 @@ def check_model(build_nn: Callable, h: int, w: int):
     test_input = tf.random.uniform(shape, minval=0, maxval=1)
     test_output = model(test_input)
     return test_output
+
+class ShakeDrop(tf.keras.layers.Layer):
+    def __init__(self, prob=0.5, alpha=[-1, 1], beta=[0, 1]):
+        assert alpha[1] > alpha[0]
+        assert beta[1] > beta[0]
+        super().__init__()
+        self.prob = prob
+        self.alpha = alpha
+        self.beta = beta
+
+    def call(self, x: tf.Tensor, training=None, *args, **kw_args) -> tf.Tensor:
+        def shakedropped():
+            batch_size = tf.shape(x)[0]
+            bern_shape = [batch_size, 1, 1, 1]
+            random_tensor = self.prob
+            random_tensor += tf.random_uniform(bern_shape, dtype=tf.float32)
+            binary_tensor = tf.floor(random_tensor)
+
+            alpha_values = tf.random_uniform(
+                [batch_size, 1, 1, 1], minval=alpha[0], maxval=alpha[1],
+                dtype=tf.float32)
+            beta_values = tf.random_uniform(
+                [batch_size, 1, 1, 1], minval=beta[0], maxval=beta[1],
+                dtype=tf.float32)
+            rand_forward = (
+                binary_tensor + alpha_values - binary_tensor * alpha_values)
+            rand_backward = (
+                binary_tensor + beta_values - binary_tensor * beta_values)
+            return x * rand_backward + tf.stop_gradient(x * rand_forward - x * rand_backward)
+
+        def expectation():
+            expected_alpha = (self.alpha[1] + self.alpha[0])/2
+            # prob is the expectation of the bernoulli variable
+            return (self.prob + expected_alpha - self.prob * expected_alpha) * x
+
+        return K.in_train_phase(shakedropped, expectation, training=training)
