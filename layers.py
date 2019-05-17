@@ -140,7 +140,8 @@ class ConvResBlk(ConvBlk):
     """
 
     def __init__(self, c, pool=None, convs=1, res_convs=2, kernel_size=3, kernel_initializer='glorot_uniform',
-                 bn_mom=0.99, bn_eps=0.001, bn_before_activ=True, activ_name='relu', use_shakedrop=False, shake_prob=0.5, shake_layer=None, total_sd_layers=None):
+                 bn_mom=0.99, bn_eps=0.001, bn_before_activ=True, activ_name='relu', use_shakedrop=False,
+                 shake_prob=0.5, shake_alpha=[0, 0], shake_beta=[0, 1], shake_layer=None, total_sd_layers=None):
         super().__init__(c, pool=pool, convs=convs, kernel_size=kernel_size, kernel_initializer=kernel_initializer,
                          bn_mom=bn_mom, bn_eps=bn_eps, bn_before_activ=bn_before_activ, activ_name=activ_name)
         self.res = []
@@ -149,7 +150,7 @@ class ConvResBlk(ConvBlk):
                              bn_eps=bn_eps, bn_before_activ=bn_before_activ, activ_name=activ_name)
             self.res.append(conv_bn)
         if use_shakedrop:
-            self.res.append(ShakeDrop(prob=shake_prob, curr_layer=shake_layer, total_layers=total_sd_layers))
+            self.res.append(ShakeDrop(prob=shake_prob, alpha=shake_alpha, beta=shake_beta, curr_layer=shake_layer, total_layers=total_sd_layers))
 
     def call(self, x: tf.Tensor, *args, **kw_args) -> tf.Tensor:
         h = super().call(x)
