@@ -287,7 +287,7 @@ class ShakeDrop(tf.keras.layers.Layer):
                 binary_tensor + alpha_values - binary_tensor * alpha_values)
             rand_backward = (
                 binary_tensor + beta_values - binary_tensor * beta_values)
-            return x * rand_backward + tf.stop_gradient(x * rand_forward - x * rand_backward)
+            return x * rand_backward + K.stop_gradient(x * rand_forward - x * rand_backward)
 
         def expectation():
             expected_alpha = (self.alpha[1] + self.alpha[0])/2
