@@ -162,8 +162,13 @@ def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: s
 
     trn_cfg = tf.contrib.tpu.RunConfig(cluster=cluster, model_dir=work_dir, tpu_config=tpu_cfg)
 
-    ws = None if ws_dir is None else tf.estimator.WarmStartSettings(ckpt_to_initialize_from=ws_dir,
-                                                                    vars_to_warm_start=ws_vars)
+    if ws_dir is None:
+        ws = None
+    elif ws_vars is None:
+        ws = ws_dir
+    else:
+        ws = tf.estimator.WarmStartSettings(ckpt_to_initialize_from=ws_dir,
+                                            vars_to_warm_start=ws_vars)
 
     return tf.contrib.tpu.TPUEstimator(use_tpu=use_tpu, model_fn=model_func, model_dir=work_dir,
                                        train_batch_size=trn_bs, eval_batch_size=val_bs, predict_batch_size=pred_bs,
