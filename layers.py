@@ -140,7 +140,7 @@ class ConvResBlk(ConvBlk):
     """
 
     def __init__(self, c, pool=None, convs=1, res_convs=2, kernel_size=3, kernel_initializer='glorot_uniform',
-                 bn_mom=0.99, bn_eps=0.001, bn_before_activ=True, activ_name='relu', use_shakedrop=False, shake_prob=0.5):
+                 bn_mom=0.99, bn_eps=0.001, bn_before_activ=True, activ_name='relu', use_shakedrop=False, shake_prob=0.5, shake_layer=None, total_sd_layers=None):
         super().__init__(c, pool=pool, convs=convs, kernel_size=kernel_size, kernel_initializer=kernel_initializer,
                          bn_mom=bn_mom, bn_eps=bn_eps, bn_before_activ=bn_before_activ, activ_name=activ_name)
         self.res = []
@@ -149,7 +149,7 @@ class ConvResBlk(ConvBlk):
                              bn_eps=bn_eps, bn_before_activ=bn_before_activ, activ_name=activ_name)
             self.res.append(conv_bn)
         if use_shakedrop:
-            self.res.append(ShakeDrop(prob=shake_prob))
+            self.res.append(ShakeDrop(prob=shake_prob, curr_layer=shake_layer, total_layers=total_sd_layers))
 
     def call(self, x: tf.Tensor, *args, **kw_args) -> tf.Tensor:
         h = super().call(x)
@@ -252,13 +252,21 @@ def check_model(build_nn: Callable, h: int, w: int):
     return test_output
 
 class ShakeDrop(tf.keras.layers.Layer):
-    def __init__(self, prob=0.5, alpha=[-1, 1], beta=[0, 1]):
+    def __init__(self, prob=0.5, alpha=[-1, 1], beta=[0, 1], curr_layer=None, total_layers=None):
         assert alpha[1] > alpha[0]
         assert beta[1] > beta[0]
         super().__init__()
         self.prob = prob
         self.alpha = alpha
         self.beta = beta
+        self.curr_layer = curr_layer
+        self.total_layers = total_layers
+        if (curr_layer is not None) and (total_layers is not None):
+            self.calc_prob()
+
+    def calc_prob(self):
+        """Calculates drop prob depending on the current layer."""
+        self.prob = 1 - (float(self.curr_layer) / self.total_layers) * self.prob
 
     def call(self, x: tf.Tensor, training=None, *args, **kw_args) -> tf.Tensor:
         def shakedropped():
