@@ -254,8 +254,8 @@ def check_model(build_nn: Callable, h: int, w: int):
 
 class ShakeDrop(tf.keras.layers.Layer):
     def __init__(self, prob=0.5, alpha=[-1, 1], beta=[0, 1], curr_layer=None, total_layers=None):
-        assert alpha[1] > alpha[0]
-        assert beta[1] > beta[0]
+        assert alpha[1] >= alpha[0]
+        assert beta[1] >= beta[0]
         super().__init__()
         self.prob = prob
         self.alpha = alpha
