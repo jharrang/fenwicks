@@ -133,7 +133,7 @@ def weight_decay_loss(wd: float = 0.0005) -> tf.Tensor:
 
 def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: str = None, ws_vars: List[str] = None,
                       trn_bs: int = 128, val_bs: int = 1, pred_bs: int = 1,
-                      use_tpu: bool = True) -> tf.contrib.tpu.TPUEstimator:
+                      use_tpu: bool = True, log_step_count_steps=500) -> tf.contrib.tpu.TPUEstimator:
     """
     Create a TPUEstimator object ready for training and evaluation.
 
@@ -160,7 +160,7 @@ def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: s
     time_str = f'{now.year}-{now.month:02d}-{now.day:02d}-{now.hour:02d}:{now.minute:02d}:{now.second:02d}'
     work_dir = os.path.join(work_dir, time_str)
 
-    trn_cfg = tf.contrib.tpu.RunConfig(cluster=cluster, model_dir=work_dir, tpu_config=tpu_cfg)
+    trn_cfg = tf.contrib.tpu.RunConfig(cluster=cluster, model_dir=work_dir, tpu_config=tpu_cfg, log_step_count_steps=log_step_count_steps)
 
     if ws_dir is None:
         ws = None
